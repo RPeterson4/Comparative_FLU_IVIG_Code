@@ -1,0 +1,173 @@
+## Simulation setup
+```{r}
+## Note that the dataset assumes the reverse order of the ordinal endpoint (i.e., 6 is death 
+## instead of 1, 1 is back to normal activities instead of 6
+## This changes the subtractive constants to additive constants (e.g., add 0.411 instead of subtracting
+## 0.411
+
+## Read in packages, functions, and data
+library(snowfall)
+library(MASS)
+library(survival)
+library(VGAM)
+library(gee)
+library(multgee)
+
+file.dir <- "C:/Users/pet00180/Downloads/"
+source(paste(file.dir, "data_generate_prop_odds.R", sep = ""))
+
+## Simulation function. At each iteration, generates data and fits models.
+Sim_full = function(S){
+  test_stats = NULL
+  trt_stats = NULL
+  for (i in 1:S){
+    data_set = t_gen()
+    data_set$better = ifelse(data_set$Day_7 < data_set$Day_0,1,0)
+    t1 = t(apply(data_set[, 1:8], 1, time_event))
+    data_set <- data.frame(data_set, time = t1[, 1], event = t1[, 2])
+    pat_vec = rep(1:320,8)
+    cat_vec = c(data_set$Day_0,data_set$Day_1,data_set$Day_2,data_set$Day_3,
+                data_set$Day_4,data_set$Day_5,data_set$Day_6,data_set$Day_7)
+    day_vec = c(rep(0,320),rep(1,320),rep(2,320),rep(3,320),rep(4,320),rep(5,320),
+                rep(6,320),rep(7,320))
+    trt_vec = rep(c(rep(0,160),rep(1,160)),8)
+    gee_data1 = data.frame(Patient = pat_vec,Category = cat_vec,Day = day_vec, 
+                          Treatment = trt_vec)
+    gee_data2 <- gee_data1[order(gee_data1$Patient, gee_data1$Day),]
+    gee_data3 = cbind(gee_data1[-c(1:320),],Baseline = rep(gee_data1$Category[1:320],7))
+    gee_data4 = gee_data3[order(gee_data3$Patient, gee_data3$Day),]
+
+    mod_slide1 = summary(glm(better ~ trt, data = data_set, 
+                             family = "binomial"))$coefficients
+    mod_slide2 = summary(glm(better ~ trt + ordered(Day_0), data = data_set, 
+                             family = "binomial"))$coefficients
+    test_slide1 = mod_slide1[2,3]^2
+    test_slide2 = mod_slide2[2,3]^2
+    trt_slide1 = mod_slide1[2,1]
+    trt_slide2 = mod_slide2[2,1]
+    
+    mod_binary1 = summary(glm(I(Day_7 < 3) ~ trt, data = data_set, 
+                              family = "binomial"))$coefficients
+    mod_binary2 = summary(glm(I(Day_7 < 3) ~ trt + ordered(Day_0), data = data_set, 
+                              family = "binomial"))$coefficients
+    test_binary1 = mod_binary1[2,3]^2
+    test_binary2 = mod_binary2[2,3]^2
+    trt_binary1 = mod_binary1[2,1]
+    trt_binary2 = mod_binary2[2,1]
+
+    guesses = c(-0.9939727,1.8705541,0.3143802,-1.8136845,-0.2088216,0.5985536,2.1027936,4.5528566)
+    tab1 = table(data_set$Day_7[data_set$trt==0])
+    tab2 = table(data_set$Day_7[data_set$trt==1])
+    tab3 = table(c(names(tab1), names(tab2)))
+    index = 2 + length(tab3)
+    
+    mod_ordinal1 = summary(polr(ordered(data_set$Day_7) ~ trt, Hess = TRUE, 
+                                data = data_set))$coefficients
+    mod_ordinal2 = summary(polr(ordered(data_set$Day_7) ~ trt + ordered(Day_0), Hess = TRUE, 
+                                data = data_set, start = guesses[1:index]))$coefficients
+    test_ordinal1 = mod_ordinal1[1,3]^2
+    test_ordinal2 = mod_ordinal2[1,3]^2
+    trt_ordinal1 = mod_ordinal1[1,1]
+    trt_ordinal2 = mod_ordinal2[1,1]
+    
+    mod_cont_ratio1 = coef(summary(vglm(ordered(data_set$Day_7) ~ trt,family=cratio(reverse=FALSE,
+                                                  parallel=TRUE), data=data_set)))
+    ind1 = nrow(mod_cont_ratio1)
+    mod_cont_ratio2 = coef(summary(vglm(ordered(data_set$Day_7) ~ trt + ordered(data_set$Day_0),
+                                        family=cratio(reverse=FALSE,parallel=TRUE), 
+                                        data=data_set)))
+    test_cont_ratio1 = mod_cont_ratio1[ind1,3]^2
+    test_cont_ratio2 = mod_cont_ratio2[ind1,3]^2    
+    trt_cont_ratio1 = mod_cont_ratio1[ind1,1]
+    trt_cont_ratio2 = mod_cont_ratio2[ind1,1]
+
+    mod_WR1 = WR_fun1(data_set$Day_7)
+    mod_WR5 = WR_fun5(data_set)
+    test_WR1 = mod_WR1$z^2
+    test_WR5 = mod_WR5$z^2
+    trt_WR1 = mod_WR1$win_ratio
+    trt_WR5 = mod_WR5$win_ratio
+
+    mod_surv1 = summary(survreg(Surv(time, event) ~ trt, 
+                            data = data_set))$table
+    mod_surv2 = summary(survreg(Surv(time, event) ~ trt + ordered(Day_0), 
+                            data = data_set))$table
+    test_surv1 = mod_surv1[2,3]^2
+    test_surv2 = mod_surv2[2,3]^2
+    trt_surv1 = mod_surv1[2,1]
+    trt_surv2 = mod_surv2[2,1]
+
+    mod_cox1 = coef(summary(coxph(Surv(time, event) ~ trt, 
+                              data = data_set)))
+    mod_cox2 = coef(summary(coxph(Surv(time, event) ~ trt + ordered(Day_0), 
+                              data = data_set)))
+    test_cox1 = mod_cox1[4]^2
+    test_cox2 = mod_cox2[10]^2
+    trt_cox1 = mod_cox1[1]
+    trt_cox2 = mod_cox2[1]
+
+    mod_ord_gee1 = summary(ordLORgee(Category ~ Treatment + Day + Treatment*Day,data = gee_data2, 
+                                id=Patient, LORstr="independence", 
+                                repeated = Day))$coefficients
+    mod_ord_gee2 = summary(ordLORgee(Category ~ Baseline + Treatment + Day + Treatment*Day,data = gee_data4, 
+                                     id=Patient, LORstr="independence", 
+                                     repeated = Day))$coefficients
+    ind2 = nrow(mod_ord_gee1)
+    test_ord_gee1 = mod_ord_gee1[ind2,3]^2
+    trt_ord_gee1 = mod_ord_gee1[ind2,1]
+    test_ord_gee2 = mod_ord_gee2[ind2 + 1,3]^2
+    trt_ord_gee2 = mod_ord_gee2[ind2 + 1,1]
+    
+    test_stats = rbind(test_stats,c(test_slide1,test_slide2,test_binary1,test_binary2,
+                                    test_ordinal1,test_ordinal2,test_cont_ratio1, test_cont_ratio2, 
+						test_WR1, test_WR5,test_surv1,test_surv2,test_cox1,test_cox2,
+						test_ord_gee1,test_ord_gee2))
+    
+    trt_stats = rbind(trt_stats,c(trt_slide1,trt_slide2,trt_binary1,trt_binary2,
+                                    trt_ordinal1,trt_ordinal2,trt_cont_ratio1, trt_cont_ratio2, 
+						trt_WR1, trt_WR5,trt_surv1,trt_surv2,trt_cox1,trt_cox2,
+						trt_ord_gee1,trt_ord_gee2))
+
+  }
+  return(list(test_stats = test_stats, trt_stats = trt_stats))
+}
+```
+
+## Run the simulation defaulted to P1-T1
+```{r, cache = TRUE}
+## Parallel computing code
+sfInit(socketHosts=rep("localhost",8),cpus=8,type='SOCK',parallel=TRUE)
+sfLibrary(snowfall)
+sfLibrary(survival)
+sfLibrary(MASS)
+sfLibrary(VGAM)
+sfLibrary(gee)
+sfLibrary(multgee)
+sfSource('C:/Users/pet00180/Downloads/data_generate_prop_odds.R')
+sfExport('Sim_full')
+stopifnot( sfCpus() == 8 )
+stopifnot( sfParallel() == TRUE )
+
+## Run simulation under a specified random seed
+s = Sys.time()
+sfClusterSetupRNG(seed=292015)
+simres = sfLapply(rep(1250,8),fun = Sim_full)
+Sys.time() - s
+sfStop()
+
+## 1 indicates without baseline adjustment, 2 indicates with baseline adjustment
+headers3 = c("Sliding Dichotomy 1", "Sliding Dichotomy 2", "Simple Logistic 1",
+             "Simply Logistic 2", "Prop. Odds 1", "Prop. Odds 2",
+             "Cont. Ratio 1", "Cont. Ratio 2", "Win Ratio 1", "Win Ratio 5",
+		"AFT 1", "AFT 2", "Cox 1", "Cox 2","Ordinal GEE 1", "Ordinal GEE 2")
+
+pow = mp(simres,8)
+t1 = mt(simres,8)
+t2 = colMeans(t1)
+mat = cbind(apply(pow,2,powfun),c(exp(t2[1:4]),exp(-t2[5:8]),t2[9:10],-t2[11:12],
+		exp(t2[13:14]),2-exp(t2[15:16])))
+rownames(mat) = headers3
+colnames(mat) = c("Empirical Power","Average Coefficient Value")
+
+print(mat)
+```

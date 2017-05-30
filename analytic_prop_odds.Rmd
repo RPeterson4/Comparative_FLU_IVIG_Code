@@ -1,0 +1,175 @@
+## Analytic method setup
+```{r}
+## Note that the dataset assumes the reverse order of the ordinal endpoint (i.e., 6 is death 
+## instead of 1, 1 is back to normal activities instead of 6
+## This changes the subtractive constants to additive constants (e.g., add 0.411 instead of subtracting
+## 0.411
+
+## Read in functions and data
+library(MASS)
+library(rootSolve)
+file.dir <- "C:/Users/pet00180/Downloads/"
+source(paste(file.dir, "data_generate_prop_odds.R", sep = ""))
+
+file.dir <- "C:/Users/pet00180/Downloads/"
+flu = read.csv(paste(file.dir, "OrdScore.csv", sep =""))
+flu2 = subset(flu, flutype <= 3 & symdur <= 7 & news >= 2 & !is.na(score1) & !is.na(score2)
+              & !is.na(score3) & !is.na(score4) & !is.na(score5) & !is.na(score6) 
+              & !is.na(score7))
+flu2$score0_alt = factor(ifelse(flu2$score0 == 2, 3, flu2$score0))
+
+## One patient was discharged from the hospital on the same day as randomization. Altering this patient's
+## status to be in hospital, not in ICU, not on O2
+flu2$score0_alt = factor(ifelse(flu2$score0 == 2, 3, flu2$score0))
+
+## FLU-IVIG distributions of the placebo group across the follow-up period
+day0p = rbind(prop.table(table(flu2$score0_alt)))
+day1p = prop.table(table(flu2$score1))
+day2p = prop.table(table(flu2$score2))
+day3p = prop.table(table(flu2$score3))
+day4p = prop.table(table(flu2$score4))
+day5p = prop.table(table(flu2$score5))
+day6p = prop.table(table(flu2$score6))
+day7p = prop.table(table(flu2$score7))
+
+## FLU-IVIG placebo group transition matrices across the follow-up period
+day0_to_1 = prop.table(table(flu2$score0_alt,flu2$score1),1)
+day1_to_2 = prop.table(table(flu2$score1,flu2$score2),1)
+day2_to_3 = prop.table(table(flu2$score2,flu2$score3),1)
+day3_to_4 = prop.table(table(flu2$score3,flu2$score4),1)
+day4_to_5 = prop.table(table(flu2$score4,flu2$score5),1)
+day5_to_6 = prop.table(table(flu2$score5,flu2$score6),1)
+day6_to_7 = prop.table(table(flu2$score6,flu2$score7),1)
+
+## More and less severe day 0 placebo group distributions
+day0p_severe = day0p
+day0p_better = day0p
+day0p_severe[1:3] = invcumlog(day0p, -0.5)[1:3]
+day0p_better[1:3] = invcumlog(day0p, 0.5)[1:3]
+
+## Helper function
+row_fun = function(row){
+	return(row[1] * row[2:7])
+}
+
+## Given a day 0 distribution and seven transition matrices, calculates the analytic distribution
+## on day 7
+exact_day7 = function(day0,m0_to_1,m1_to_2,m2_to_3,m3_to_4,m4_to_5,m5_to_6,m6_to_7){
+	day0_to_11 = cbind(t(day0),m0_to_1)
+	day1pp = rbind(colSums(t(apply(day0_to_11,1,row_fun))))
+	day1_to_22 = cbind(t(day1pp), m1_to_2)
+	day2pp = rbind(colSums(t(apply(day1_to_22,1,row_fun))))
+	day2_to_33 = cbind(t(day2pp), m2_to_3)
+	day3pp = rbind(colSums(t(apply(day2_to_33,1,row_fun))))
+	day3_to_44 = cbind(t(day3pp), m3_to_4)
+	day4pp = rbind(colSums(t(apply(day3_to_44,1,row_fun))))
+	day4_to_55 = cbind(t(day4pp), m4_to_5)
+	day5pp = rbind(colSums(t(apply(day4_to_55,1,row_fun))))
+	day5_to_66 = cbind(t(day5pp), m5_to_6)
+	day6pp = rbind(colSums(t(apply(day5_to_66,1,row_fun))))
+	day6_to_77 = cbind(t(day6pp), m6_to_7)
+	day7pp = rbind(colSums(t(apply(day6_to_77,1,row_fun))))
+	return(day7pp)
+}
+```
+
+## Analytic day 7 placebo and IVIG group distributions, as well as analytic odds ratio for P1-T1
+```{r}
+## Add (subtract) a constant (e.g., 0.5) to add more (fewer) severe cases of influenza
+## Add 0 to use the FLU-IVIG placebo group transition matrices
+p = 0
+day0_to_1p = add_c1(day0_to_1,p)
+day1_to_2p = add_c2(day1_to_2,p)
+day2_to_3p = add_c2(day2_to_3,p)
+day3_to_4p = add_c2(day3_to_4,p)
+day4_to_5p = add_c3(day4_to_5,p)
+day5_to_6p = add_c2(day5_to_6,p)
+day6_to_7p = add_c2(day6_to_7,p)
+
+## T1: Treatment effect remains constant for all categories across all seven days of follow-up.
+g = 0.411
+e0_to_1 = add_c1(day0_to_1p,g)
+e1_to_2 = add_c2(day1_to_2p,g)
+e2_to_3 = add_c2(day2_to_3p,g)
+e3_to_4 = add_c2(day3_to_4p,g)
+e4_to_5 = add_c3(day4_to_5p,g)
+e5_to_6 = add_c2(day5_to_6p,g)
+e6_to_7 = add_c2(day6_to_7p,g)
+
+## T2: Treatment effect only benefits patients for the first three days after randomization 
+## for all categories.
+#g = 0.91
+#e0_to_1 = add_c1(day0_to_1p,g)
+#e1_to_2 = add_c2(day1_to_2p,g)
+#e2_to_3 = add_c2(day2_to_3p,g)
+#e3_to_4 = add_c2(day3_to_4p,0)
+#e4_to_5 = add_c3(day4_to_5p,0)
+#e5_to_6 = add_c2(day5_to_6p,0)
+#e6_to_7 = add_c2(day6_to_7p,0)
+
+## T3: Treatment effect constantly decreases with each successive day with no additional 
+# benefit on day 7 for all categories
+#g = 0.808
+#sl = -g/6
+#e0_to_1 = add_c1(day0_to_1p,g)
+#e1_to_2 = add_c2(day1_to_2p,g + sl)
+#e2_to_3 = add_c2(day2_to_3p,g + 2*sl)
+#e3_to_4 = add_c2(day3_to_4p,g + 3*sl)
+#e4_to_5 = add_c3(day4_to_5p,g + 4*sl)
+#e5_to_6 = add_c2(day5_to_6p,g + 5*sl)
+#e6_to_7 = add_c2(day6_to_7p,0)
+
+## T4: Treatment effect remains constant across all seven days of follow-up but is 75% as 
+## effective for discharged patients.
+#g = 0.437
+#e0_to_1 = add_c1(day0_to_1p,g)
+#e1_to_2 = add_c222(day1_to_2p,g)
+#e2_to_3 = add_c222(day2_to_3p,g)
+#e3_to_4 = add_c222(day3_to_4p,g)
+#e4_to_5 = add_c333(day4_to_5p,g)
+#e5_to_6 = add_c222(day5_to_6p,g)
+#e6_to_7 = add_c222(day6_to_7p,g)
+
+## T5: Treatment effect only benefits patients in the In ICU and non-ICU, on oxygen categories 
+## across all seven days of follow-up.
+#g = 1.1
+#e0_to_1 = add_c1111(day0_to_1p,g)
+#e1_to_2 = add_c2222(day1_to_2p,g)
+#e2_to_3 = add_c2222(day2_to_3p,g)
+#e3_to_4 = add_c2222(day3_to_4p,g)
+#e4_to_5 = add_c3333(day4_to_5p,g)
+#e5_to_6 = add_c2222(day5_to_6p,g)
+#e6_to_7 = add_c22222(day6_to_7p,g)
+
+## T6: Treatment effect only benefits patients for the last three days of follow-up for all 
+## categories.
+#g = 0.852
+#e0_to_1 = add_c1(day0_to_1p,0)
+#e1_to_2 = add_c2(day1_to_2p,0)
+#e2_to_3 = add_c2(day2_to_3p,0)
+#e3_to_4 = add_c2(day3_to_4p,0)
+#e4_to_5 = add_c3(day4_to_5p,g)
+#e5_to_6 = add_c2(day5_to_6p,g)
+#e6_to_7 = add_c2(day6_to_7p,g)
+
+## T7: Treatment effect constantly increases with each successive day, starting on day 2 for 
+## all categories. No treatment effect on day 1.
+#sl = 0.764/6
+#e0_to_1 = add_c1(day0_to_1p,0)
+#e1_to_2 = add_c2(day1_to_2p,sl)
+#e2_to_3 = add_c2(day2_to_3p,2*sl)
+#e3_to_4 = add_c2(day3_to_4p,3*sl)
+#e4_to_5 = add_c3(day4_to_5p,4*sl)
+#e5_to_6 = add_c2(day5_to_6p,5*sl)
+#e6_to_7 = add_c2(day6_to_7p,6*sl)
+
+## Analytic day 7 placebo group distribution
+p_prob = exact_day7(day0p,day0_to_1p,day1_to_2p,day2_to_3p,day3_to_4p,day4_to_5p,day5_to_6p,day6_to_7p)
+round(rev(p_prob),3)*100
+
+## Analytic day 7 IVIG group distribution
+e_prob = exact_day7(day0p,e0_to_1,e1_to_2,e2_to_3,e3_to_4,e4_to_5,e5_to_6,e6_to_7)
+round(rev(e_prob),3)*100
+
+## Analytic odds ratio between the IVIG and placebo group distributions
+exp(-multiroot(paramfnGen,guesses,plac_prob = rev(p_prob),exp_prob = rev(e_prob))$root[6])
