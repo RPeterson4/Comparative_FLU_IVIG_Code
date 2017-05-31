@@ -132,11 +132,15 @@ library(snowfall)</code></pre>
 <pre class="r"><code>library(MASS)
 library(survival)
 library(VGAM)</code></pre>
+<pre><code>## Warning: package 'VGAM' was built under R version 3.3.3</code></pre>
 <pre><code>## Loading required package: stats4</code></pre>
 <pre><code>## Loading required package: splines</code></pre>
-<pre class="r"><code>library(gee)
-library(multgee)</code></pre>
+<pre class="r"><code>library(gee)</code></pre>
+<pre><code>## Warning: package 'gee' was built under R version 3.3.3</code></pre>
+<pre class="r"><code>library(multgee)</code></pre>
+<pre><code>## Warning: package 'multgee' was built under R version 3.3.3</code></pre>
 <pre><code>## Loading required package: gnm</code></pre>
+<pre><code>## Warning: package 'gnm' was built under R version 3.3.3</code></pre>
 <pre class="r"><code>file.dir &lt;- &quot;C:/Users/pet00180/Downloads/&quot;
 source(paste(file.dir, &quot;data_generate_prop_odds.R&quot;, sep = &quot;&quot;))
 
@@ -517,42 +521,44 @@ sfClusterSetupRNG(seed=292015)</code></pre>
 <pre><code>## [1] &quot;RNGstream&quot;</code></pre>
 <pre class="r"><code>simres = sfLapply(rep(1250,8),fun = Sim_full)
 Sys.time() - s</code></pre>
-<pre><code>## Time difference of 2.023018 hours</code></pre>
+<pre><code>## Time difference of 1.421401 hours</code></pre>
 <pre class="r"><code>sfStop()</code></pre>
 <pre><code>## 
 ## Stopping cluster</code></pre>
 <pre class="r"><code>## 1 indicates without baseline adjustment, 2 indicates with baseline adjustment
-headers3 = c(&quot;Sliding Dichotomy 1&quot;, &quot;Sliding Dichotomy 2&quot;, &quot;Simple Logistic 1&quot;,
-             &quot;Simply Logistic 2&quot;, &quot;Prop. Odds 1&quot;, &quot;Prop. Odds 2&quot;,
-             &quot;Cont. Ratio 1&quot;, &quot;Cont. Ratio 2&quot;, &quot;Win Ratio 1&quot;, &quot;Win Ratio 5&quot;,
-        &quot;AFT 1&quot;, &quot;AFT 2&quot;, &quot;Cox 1&quot;, &quot;Cox 2&quot;,&quot;Ordinal GEE 1&quot;, &quot;Ordinal GEE 2&quot;)
+headers3 = c(&quot;Prop. Odds 1&quot;, &quot;Cont. Ratio 1&quot;, &quot;Ordinal GEE 1&quot;, &quot;Simple Logistic 1&quot;, &quot;Sliding Dichotomy 1&quot;,
+             &quot;Win Ratio 1&quot;, &quot;Cox 1&quot;, &quot;AFT 1&quot;,
+             &quot;Prop. Odds 2&quot;, &quot;Cont. Ratio 2&quot;, &quot;Ordinal GEE 2&quot;, &quot;Simple Logistic 2&quot;, &quot;Sliding Dichotomy 2&quot;,
+             &quot;Win Ratio 2&quot;, &quot;Cox 2&quot;, &quot;AFT 2&quot;)
 
 pow = mp(simres,8)
 t1 = mt(simres,8)
 t2 = colMeans(t1)
 mat = cbind(apply(pow,2,powfun),c(exp(t2[1:4]),exp(-t2[5:8]),t2[9:10],-t2[11:12],
         exp(t2[13:14]),2-exp(t2[15:16])))
-rownames(mat) = headers3
-colnames(mat) = c(&quot;Empirical Power&quot;,&quot;Average Coefficient Value&quot;)
+mat2 = rbind(mat[5,],mat[7,],mat[15,],mat[3,],mat[1,],mat[9,],mat[13,],mat[11,],
+             mat[6,],mat[8,],mat[16,],mat[4,],mat[2,],mat[10,],mat[14,],mat[12,])
+rownames(mat2) = headers3
+colnames(mat2) = c(&quot;Empirical Power&quot;,&quot;Average Coefficient Value&quot;)
 
-print(mat)</code></pre>
+print(mat2)</code></pre>
 <pre><code>##                     Empirical Power Average Coefficient Value
-## Sliding Dichotomy 1          0.6955                 1.9778397
-## Sliding Dichotomy 2          0.7196                 2.0792827
-## Simple Logistic 1            0.7165                 1.8779359
-## Simply Logistic 2            0.7870                 2.1224331
 ## Prop. Odds 1                 0.7971                 1.7749314
-## Prop. Odds 2                 0.8625                 1.9070846
 ## Cont. Ratio 1                0.6893                 1.4849715
-## Cont. Ratio 2                0.8149                 1.6313644
-## Win Ratio 1                  0.7954                 1.6430779
-## Win Ratio 5                  0.8367                 1.7778548
-## AFT 1                        0.7883                 0.2407967
-## AFT 2                        0.8623                 0.2507056
-## Cox 1                        0.7673                 1.4329346
-## Cox 2                        0.8493                 1.4944356
 ## Ordinal GEE 1                0.8298                 1.0963630
-## Ordinal GEE 2                0.7045                 1.1074229</code></pre>
+## Simple Logistic 1            0.7165                 1.8779359
+## Sliding Dichotomy 1          0.6955                 1.9778397
+## Win Ratio 1                  0.7954                 1.6430779
+## Cox 1                        0.7673                 1.4329346
+## AFT 1                        0.7883                 0.2407967
+## Prop. Odds 2                 0.8625                 1.9070846
+## Cont. Ratio 2                0.8149                 1.6313644
+## Ordinal GEE 2                0.7045                 1.1074229
+## Simple Logistic 2            0.7870                 2.1224331
+## Sliding Dichotomy 2          0.7196                 2.0792827
+## Win Ratio 2                  0.8367                 1.7778548
+## Cox 2                        0.8493                 1.4944356
+## AFT 2                        0.8623                 0.2507056</code></pre>
 </div>
 
 

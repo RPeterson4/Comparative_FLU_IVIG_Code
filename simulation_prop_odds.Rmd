@@ -156,18 +156,20 @@ Sys.time() - s
 sfStop()
 
 ## 1 indicates without baseline adjustment, 2 indicates with baseline adjustment
-headers3 = c("Sliding Dichotomy 1", "Sliding Dichotomy 2", "Simple Logistic 1",
-             "Simply Logistic 2", "Prop. Odds 1", "Prop. Odds 2",
-             "Cont. Ratio 1", "Cont. Ratio 2", "Win Ratio 1", "Win Ratio 5",
-		"AFT 1", "AFT 2", "Cox 1", "Cox 2","Ordinal GEE 1", "Ordinal GEE 2")
+headers3 = c("Prop. Odds 1", "Cont. Ratio 1", "Ordinal GEE 1", "Simple Logistic 1", "Sliding Dichotomy 1",
+             "Win Ratio 1", "Cox 1", "AFT 1",
+             "Prop. Odds 2", "Cont. Ratio 2", "Ordinal GEE 2", "Simple Logistic 2", "Sliding Dichotomy 2",
+             "Win Ratio 2", "Cox 2", "AFT 2")
 
 pow = mp(simres,8)
 t1 = mt(simres,8)
 t2 = colMeans(t1)
 mat = cbind(apply(pow,2,powfun),c(exp(t2[1:4]),exp(-t2[5:8]),t2[9:10],-t2[11:12],
 		exp(t2[13:14]),2-exp(t2[15:16])))
-rownames(mat) = headers3
-colnames(mat) = c("Empirical Power","Average Coefficient Value")
+mat2 = rbind(mat[5,],mat[7,],mat[15,],mat[3,],mat[1,],mat[9,],mat[13,],mat[11,],
+             mat[6,],mat[8,],mat[16,],mat[4,],mat[2,],mat[10,],mat[14,],mat[12,])
+rownames(mat2) = headers3
+colnames(mat2) = c("Empirical Power","Average Coefficient Value")
 
-print(mat)
+print(mat2)
 ```
