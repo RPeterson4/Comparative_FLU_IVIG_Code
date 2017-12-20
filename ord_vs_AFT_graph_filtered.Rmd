@@ -23,12 +23,12 @@ ORfun = function(p0,OR){
 	return(1-pexp)
 }
 
-days = seq(1,14,0.5)
-p3 = seq(0.01,0.99,0.01)
+days = seq(1,14,0.01)
+p3 = seq(0.01,0.99,0.001)
 p3c = 1 - sum(((plac_bin + exp_bin)/2)^3)
 res = NULL
 p3dmat = NULL
-for(i in 1:27){
+for(i in 1:length(days)){
 	day = days[i]
 	pd = pexp(day,exp(g0))
 	pe = pexp(day,exp(g0+g1))
@@ -40,22 +40,22 @@ for(i in 1:27){
 	pt2 = rep(t2,length(p3d))
 
 	x = length(pt1)
-	repv = rep(NA,99-x)	
+	repv = rep(NA,length(p3)-x)	
 
 	p3dmat = cbind(p3dmat,c(p3d,repv))
 	res = cbind(res,c(pt1,repv),c(pt2,repv),b=c(ifelse(pt1>pt2,1,0),repv))
 }
 
-ind = seq(3,81,3)
+ind = seq(3,3*length(days),3)
 graph = NULL
-for(i in 1:27){
+for(i in 1:length(days)){
 	day = days[i]
 	index = ind[i]
-	graph = cbind(graph,day=rep(day,99),p3d = p3dmat[,i],b=res[,index])
+	graph = cbind(graph,day=rep(day,length(p3)),p3d = p3dmat[,i],b=res[,index])
 }
 
 zerosub = NULL
-for(i in 1:27){
+for(i in 1:length(days)){
 	index = ind[i]
 	subgraph = as.data.frame(graph[,c((index-2):index)])
 	sub = subset(subgraph,subgraph$b == 0)
@@ -63,7 +63,7 @@ for(i in 1:27){
 }
 
 onesub = NULL
-for(i in 1:27){
+for(i in 1:length(days)){
 	index = ind[i]
 	subgraph = as.data.frame(graph[,c((index-2):index)])
 	sub = subset(subgraph,subgraph$b == 1)
@@ -73,7 +73,7 @@ for(i in 1:27){
 daysub = NULL
 minsub = NULL
 maxsub = NULL
-for(i in 1:27){
+for(i in 1:length(days)){
 	daysub = subset(onesub, day == days[i])
 	minsub = rbind(minsub,c(days[i],min(daysub$p3d)))
 	maxsub = rbind(maxsub,c(days[i],max(daysub$p3d)))
@@ -82,10 +82,10 @@ for(i in 1:27){
 daysub2 = NULL
 minsub2 = NULL
 maxsub2 = NULL
-for(i in 1:17){
-	daysub2 = subset(zerosub, day == days[i+10])
-	minsub2 = rbind(minsub2,c(days[i+10],min(daysub2$p3d)))
-	maxsub2 = rbind(maxsub2,c(days[i+10],max(daysub2$p3d)))
+for(i in 482:length(days)){
+	daysub2 = subset(zerosub, day == days[i])
+	minsub2 = rbind(minsub2,c(days[i],min(daysub2$p3d)))
+	maxsub2 = rbind(maxsub2,c(days[i],max(daysub2$p3d)))
 }
 
 par(mar=c(5,6,4,2))
@@ -105,11 +105,11 @@ axis(2, at=seq(0,1,0.1), lwd=0, lwd.ticks=1)
 ```
 
 ```{r}
-p0s = seq(0.01,0.99,0.01)
-p3 = seq(0.01,0.99,0.01)
+p0s = seq(0.01,0.99,0.001)
+p3 = seq(0.01,0.99,0.001)
 res = NULL
 p3dmat = NULL
-for(i in 1:99){
+for(i in 1:length(p0s)){
 	p0d = p0s[i]
 	p0e = ORfun(p0d,1.77)
 	p3c = 1 - ((p0d+p0e)/2)^3 - ((2-p0d-p0e)/2)^3
@@ -121,22 +121,22 @@ for(i in 1:99){
 	pt2 = rep(t2,length(p3d))
 
 	x = length(pt1)
-	repv = rep(NA,99-x)	
+	repv = rep(NA,length(p0s)-x)	
 
 	p3dmat = cbind(p3dmat,c(p3d,repv))
 	res = cbind(res,c(pt1,repv),c(pt2,repv),b=c(ifelse(pt1>pt2,1,0),repv))	
 }
 
-ind = seq(3,297,3)
+ind = seq(3,3*length(p0s),3)
 graph = NULL
-for(i in 1:99){
+for(i in 1:length(p0s)){
 	p0d = p0s[i]
 	index = ind[i]
-	graph = cbind(graph,p0d=rep(p0d,99),p3d = p3dmat[,i],b=res[,index])
+	graph = cbind(graph,p0d=rep(p0d,length(p0s)),p3d = p3dmat[,i],b=res[,index])
 }
 
 zerosub = NULL
-for(i in 1:99){
+for(i in 1:length(p0s)){
 	index = ind[i]
 	subgraph = as.data.frame(graph[,c((index-2):index)])
 	sub = subset(subgraph,subgraph$b == 0)
@@ -144,7 +144,7 @@ for(i in 1:99){
 }
 
 onesub = NULL
-for(i in 1:99){
+for(i in 1:length(p0s)){
 	index = ind[i]
 	subgraph = as.data.frame(graph[,c((index-2):index)])
 	sub = subset(subgraph,subgraph$b == 1)
@@ -154,7 +154,7 @@ for(i in 1:99){
 p0sub = NULL
 minsub = NULL
 maxsub = NULL
-for(i in 1:99){
+for(i in 1:length(p0s)){
 	p0sub = subset(onesub, p0d == p0s[i])
 	minsub = rbind(minsub,c(p0s[i],min(p0sub$p3d)))
 	maxsub = rbind(maxsub,c(p0s[i],max(p0sub$p3d)))
@@ -163,11 +163,15 @@ for(i in 1:99){
 p0sub2 = NULL
 minsub2 = NULL
 maxsub2 = NULL
-for(i in 1:63){
-	p0sub2 = subset(zerosub, p0d == p0s[i+36])
-	minsub2 = rbind(minsub2,c(p0s[i+36],min(p0sub2$p3d)))
-	maxsub2 = rbind(maxsub2,c(p0s[i+36],max(p0sub2$p3d)))
+
+for(i in 326:981){
+	p0sub2 = subset(zerosub, p0d == p0s[i])
+	minsub2 = rbind(minsub2,c(p0s[i],min(p0sub2$p3d)))
+	maxsub2 = rbind(maxsub2,c(p0s[i],max(p0sub2$p3d)))
 }
+
+minsub2 = minsub2[-3,]
+maxsub2 = maxsub2[-3,]
 
 par(mar=c(5,6,4,2))
 term = expression(1 - sum(bar(p)[i]^3,i==1,k))

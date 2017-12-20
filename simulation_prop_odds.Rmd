@@ -89,13 +89,22 @@ Sim_full = function(S){
     trt_WR5 = mod_WR5$win_ratio
 
     mod_surv1 = summary(survreg(Surv(time, event) ~ trt, 
-                            data = data_set))$table
+                            data = data_set, dist = 'exponential'))$table
     mod_surv2 = summary(survreg(Surv(time, event) ~ trt + ordered(Day_0), 
-                            data = data_set))$table
+                            data = data_set, dist = 'exponential'))$table
     test_surv1 = mod_surv1[2,3]^2
     test_surv2 = mod_surv2[2,3]^2
     trt_surv1 = mod_surv1[2,1]
     trt_surv2 = mod_surv2[2,1]
+    
+    mod_surv3 = summary(survreg(Surv(time, event) ~ trt, 
+                            data = data_set))$table
+    mod_surv4 = summary(survreg(Surv(time, event) ~ trt + ordered(Day_0), 
+                            data = data_set))$table
+    test_surv3 = mod_surv3[2,3]^2
+    test_surv4 = mod_surv4[2,3]^2
+    trt_surv3 = mod_surv3[2,1]
+    trt_surv4 = mod_surv4[2,1]
 
     mod_cox1 = coef(summary(coxph(Surv(time, event) ~ trt, 
                               data = data_set)))
@@ -120,12 +129,12 @@ Sim_full = function(S){
     
     test_stats = rbind(test_stats,c(test_slide1,test_slide2,test_binary1,test_binary2,
                                     test_ordinal1,test_ordinal2,test_cont_ratio1, test_cont_ratio2, 
-						test_WR1, test_WR5,test_surv1,test_surv2,test_cox1,test_cox2,
+						test_WR1, test_WR5,test_surv1,test_surv2,test_surv3,test_surv4,test_cox1,test_cox2,
 						test_ord_gee1,test_ord_gee2))
     
     trt_stats = rbind(trt_stats,c(trt_slide1,trt_slide2,trt_binary1,trt_binary2,
                                     trt_ordinal1,trt_ordinal2,trt_cont_ratio1, trt_cont_ratio2, 
-						trt_WR1, trt_WR5,trt_surv1,trt_surv2,trt_cox1,trt_cox2,
+						trt_WR1, trt_WR5,trt_surv1,trt_surv2,trt_surv3,trt_surv4,trt_cox1,trt_cox2,
 						trt_ord_gee1,trt_ord_gee2))
 
   }
@@ -157,17 +166,17 @@ sfStop()
 
 ## 1 indicates without baseline adjustment, 2 indicates with baseline adjustment
 headers3 = c("Prop. Odds 1", "Cont. Ratio 1", "Ordinal GEE 1", "Simple Logistic 1", "Sliding Dichotomy 1",
-             "Win Ratio 1", "Cox 1", "AFT 1",
+             "Win Ratio 1", "Cox 1", "AFT Exponential 1", "AFT Weibull 1",
              "Prop. Odds 2", "Cont. Ratio 2", "Ordinal GEE 2", "Simple Logistic 2", "Sliding Dichotomy 2",
-             "Win Ratio 2", "Cox 2", "AFT 2")
+             "Win Ratio 2", "Cox 2", "AFT Exponential 2", "AFT Weibull 2")
 
 pow = mp(simres,8)
 t1 = mt(simres,8)
 t2 = colMeans(t1)
-mat = cbind(apply(pow,2,powfun),c(exp(t2[1:4]),exp(-t2[5:8]),t2[9:10],-t2[11:12],
-		exp(t2[13:14]),2-exp(t2[15:16])))
-mat2 = rbind(mat[5,],mat[7,],mat[15,],mat[3,],mat[1,],mat[9,],mat[13,],mat[11,],
-             mat[6,],mat[8,],mat[16,],mat[4,],mat[2,],mat[10,],mat[14,],mat[12,])
+mat = cbind(apply(pow,2,powfun),c(exp(t2[1:4]),exp(-t2[5:8]),t2[9:10],-t2[11:14],
+		exp(t2[15:16]),2-exp(t2[17:18])))
+mat2 = rbind(mat[5,],mat[7,],mat[17,],mat[3,],mat[1,],mat[9,],mat[15,],mat[11,],mat[13,],
+             mat[6,],mat[8,],mat[18,],mat[4,],mat[2,],mat[10,],mat[16,],mat[12,],mat[14,])
 rownames(mat2) = headers3
 colnames(mat2) = c("Empirical Power","Average Coefficient Value")
 

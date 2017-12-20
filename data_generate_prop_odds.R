@@ -218,7 +218,7 @@ e6_to_7 = add_c2(day6_to_7,g)
 
 ## T2: Treatment effect only benefits patients for the first three days after randomization 
 ## for all categories.
-#g = 0.91
+#g = 0.891
 #e0_to_1 = add_c1(day0_to_1,g)
 #e1_to_2 = add_c2(day1_to_2,g)
 #e2_to_3 = add_c2(day2_to_3,g)
@@ -229,7 +229,7 @@ e6_to_7 = add_c2(day6_to_7,g)
 
 ## T3: Treatment effect constantly decreases with each successive day with no additional 
 ## benefit on day 7 for all categories
-#g = 0.808
+#g = 0.787
 #sl = -g/6
 #e0_to_1 = add_c1(day0_to_1,g)
 #e1_to_2 = add_c2(day1_to_2,g + sl)
@@ -241,7 +241,7 @@ e6_to_7 = add_c2(day6_to_7,g)
 
 ## T4: Treatment effect remains constant across all seven days of follow-up but is 75% as 
 ## effective for discharged patients.
-#g = 0.437
+#g = 0.424
 #e0_to_1 = add_c1(day0_to_1,g)
 #e1_to_2 = add_c222(day1_to_2,g)
 #e2_to_3 = add_c222(day2_to_3,g)
@@ -252,7 +252,7 @@ e6_to_7 = add_c2(day6_to_7,g)
 
 ## T5: Treatment effect only benefits patients in the In ICU and non-ICU, on oxygen categories 
 ## across all seven days of follow-up.
-#g = 1.1
+#g = 0.834
 #e0_to_1 = add_c1111(day0_to_1,g)
 #e1_to_2 = add_c2222(day1_to_2,g)
 #e2_to_3 = add_c2222(day2_to_3,g)
@@ -263,7 +263,7 @@ e6_to_7 = add_c2(day6_to_7,g)
 
 ## T6: Treatment effect only benefits patients for the last three days of follow-up for all 
 ## categories.
-#g = 0.852
+#g = 0.716
 #e0_to_1 = add_c1(day0_to_1,0)
 #e1_to_2 = add_c2(day1_to_2,0)
 #e2_to_3 = add_c2(day2_to_3,0)
@@ -274,7 +274,7 @@ e6_to_7 = add_c2(day6_to_7,g)
 
 ## T7: Treatment effect constantly increases with each successive day, starting on day 2 for 
 ## all categories. No treatment effect on day 1.
-#sl = 0.764/6
+#sl = 0.666/6
 #e0_to_1 = add_c1(day0_to_1,0)
 #e1_to_2 = add_c2(day1_to_2,sl)
 #e2_to_3 = add_c2(day2_to_3,2*sl)
@@ -335,6 +335,14 @@ mt = function(results,l){
 	full = NULL
 	for(i in 1:l){
 	full = rbind(full,results[[i]]$trt_stats)
+	}
+	return(full)
+}
+
+ms = function(results,l){
+	full = NULL
+	for(i in 1:l){
+	full = rbind(full,results[[i]]$day7_bin)
 	}
 	return(full)
 }
