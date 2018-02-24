@@ -1,0 +1,822 @@
+```{r, cache = TRUE, include = FALSE}
+ORfun = function(p0,OR){
+	p0 = 1 - p0
+	pexp = p0/(p0 + (1 - p0)*OR)
+	return(1-pexp)
+}
+
+n = 320
+qc = qnorm(0.975)
+
+p0 = 0.1
+
+p1 = ORfun(p0,1.77)
+
+g0 = log(-log(1-p0)/7)
+g1 = log(-log(1-p1)/7) - g0
+
+plac_bin = c(p0,1-p0)
+exp_bin = c(p1,1-p1)
+
+days = seq(7,14,0.01)
+p3 = seq(0.01,0.99,0.001)
+p3c = 1 - sum(((plac_bin + exp_bin)/2)^3)
+res = NULL
+p3dmat = NULL
+for(i in 1:length(days)){
+	day = days[i]
+	pd = pexp(day,exp(g0))
+	pe = pexp(day,exp(g0+g1))
+	p3d = p3[p3>p3c]
+
+	pt1 = log(1.77) * sqrt(n^3*p3d/(12*(n+1)^2))
+	
+	t2 = log(log(1-pe)/log(1-pd)) * (2/n * (1/pd + 1/pe))^(-1/2)
+	pt2 = rep(t2,length(p3d))
+
+	x = length(pt1)
+	repv = rep(NA,length(p3)-x)	
+
+	p3dmat = cbind(p3dmat,c(p3d,repv))
+	res = cbind(res,c(pt1,repv),c(pt2,repv),b=c(ifelse(pt1>pt2,1,0),repv))
+}
+
+ind = seq(3,3*length(days),3)
+graph = NULL
+for(i in 1:length(days)){
+	day = days[i]
+	index = ind[i]
+	graph = cbind(graph,day=rep(day,length(p3)),p3d = p3dmat[,i],b=res[,index])
+}
+
+zerosub = NULL
+for(i in 1:length(days)){
+	index = ind[i]
+	subgraph = as.data.frame(graph[,c((index-2):index)])
+	sub = subset(subgraph,subgraph$b == 0)
+	zerosub = rbind(zerosub,sub)
+}
+
+onesub = NULL
+for(i in 1:length(days)){
+	index = ind[i]
+	subgraph = as.data.frame(graph[,c((index-2):index)])
+	sub = subset(subgraph,subgraph$b == 1)
+	onesub = rbind(onesub,sub)
+}
+
+daysub1 = NULL
+minsub1 = NULL
+maxsub1 = NULL
+for(i in 1:length(days)){
+	daysub = subset(onesub, day == days[i])
+	minsub1 = rbind(minsub1,c(days[i],min(min(daysub$p3d),0.99)))
+	maxsub1 = rbind(maxsub1,c(days[i],max(max(daysub$p3d),0.99)))
+}
+
+daysub2 = NULL
+minsub2 = NULL
+maxsub2 = NULL
+for(i in 1:length(days)){
+	daysub2 = subset(zerosub, day == days[i])
+	minsub2 = rbind(minsub2,c(days[i],min(min(daysub2$p3d),p3c)))
+	maxsub2 = rbind(maxsub2,c(days[i],max(max(daysub2$p3d),p3c)))
+}
+```
+
+```{r, cache = TRUE, include = FALSE}
+p0 = 0.2
+
+p1 = ORfun(p0,1.77)
+
+g0 = log(-log(1-p0)/7)
+g1 = log(-log(1-p1)/7) - g0
+
+plac_bin = c(p0,1-p0)
+exp_bin = c(p1,1-p1)
+
+days = seq(7,14,0.01)
+p3 = seq(0.01,0.99,0.001)
+p3c = 1 - sum(((plac_bin + exp_bin)/2)^3)
+res = NULL
+p3dmat = NULL
+for(i in 1:length(days)){
+	day = days[i]
+	pd = pexp(day,exp(g0))
+	pe = pexp(day,exp(g0+g1))
+	p3d = p3[p3>p3c]
+
+	pt1 = log(1.77) * sqrt(n^3*p3d/(12*(n+1)^2))
+	
+	t2 = log(log(1-pe)/log(1-pd)) * (2/n * (1/pd + 1/pe))^(-1/2)
+	pt2 = rep(t2,length(p3d))
+
+	x = length(pt1)
+	repv = rep(NA,length(p3)-x)	
+
+	p3dmat = cbind(p3dmat,c(p3d,repv))
+	res = cbind(res,c(pt1,repv),c(pt2,repv),b=c(ifelse(pt1>pt2,1,0),repv))
+}
+
+ind = seq(3,3*length(days),3)
+graph = NULL
+for(i in 1:length(days)){
+	day = days[i]
+	index = ind[i]
+	graph = cbind(graph,day=rep(day,length(p3)),p3d = p3dmat[,i],b=res[,index])
+}
+
+zerosub = NULL
+for(i in 1:length(days)){
+	index = ind[i]
+	subgraph = as.data.frame(graph[,c((index-2):index)])
+	sub = subset(subgraph,subgraph$b == 0)
+	zerosub = rbind(zerosub,sub)
+}
+
+onesub = NULL
+for(i in 1:length(days)){
+	index = ind[i]
+	subgraph = as.data.frame(graph[,c((index-2):index)])
+	sub = subset(subgraph,subgraph$b == 1)
+	onesub = rbind(onesub,sub)
+}
+
+daysub1 = NULL
+minsub3 = NULL
+maxsub3 = NULL
+for(i in 1:length(days)){
+	daysub = subset(onesub, day == days[i])
+	minsub3 = rbind(minsub3,c(days[i],min(min(daysub$p3d),0.99)))
+	maxsub3 = rbind(maxsub3,c(days[i],max(max(daysub$p3d),0.99)))
+}
+
+daysub2 = NULL
+minsub4 = NULL
+maxsub4 = NULL
+for(i in 1:length(days)){
+	daysub2 = subset(zerosub, day == days[i])
+	minsub4 = rbind(minsub4,c(days[i],min(min(daysub2$p3d),p3c)))
+	maxsub4 = rbind(maxsub4,c(days[i],max(max(daysub2$p3d),p3c)))
+}
+```
+
+```{r, cache=TRUE, include = FALSE}
+p0 = 0.3
+
+p1 = ORfun(p0,1.77)
+
+g0 = log(-log(1-p0)/7)
+g1 = log(-log(1-p1)/7) - g0
+
+plac_bin = c(p0,1-p0)
+exp_bin = c(p1,1-p1)
+
+days = seq(7,14,0.01)
+p3 = seq(0.01,0.99,0.001)
+p3c = 1 - sum(((plac_bin + exp_bin)/2)^3)
+res = NULL
+p3dmat = NULL
+for(i in 1:length(days)){
+	day = days[i]
+	pd = pexp(day,exp(g0))
+	pe = pexp(day,exp(g0+g1))
+	p3d = p3[p3>p3c]
+
+	pt1 = log(1.77) * sqrt(n^3*p3d/(12*(n+1)^2))
+	
+	t2 = log(log(1-pe)/log(1-pd)) * (2/n * (1/pd + 1/pe))^(-1/2)
+	pt2 = rep(t2,length(p3d))
+
+	x = length(pt1)
+	repv = rep(NA,length(p3)-x)	
+
+	p3dmat = cbind(p3dmat,c(p3d,repv))
+	res = cbind(res,c(pt1,repv),c(pt2,repv),b=c(ifelse(pt1>pt2,1,0),repv))
+}
+
+ind = seq(3,3*length(days),3)
+graph = NULL
+for(i in 1:length(days)){
+	day = days[i]
+	index = ind[i]
+	graph = cbind(graph,day=rep(day,length(p3)),p3d = p3dmat[,i],b=res[,index])
+}
+
+zerosub = NULL
+for(i in 1:length(days)){
+	index = ind[i]
+	subgraph = as.data.frame(graph[,c((index-2):index)])
+	sub = subset(subgraph,subgraph$b == 0)
+	zerosub = rbind(zerosub,sub)
+}
+
+onesub = NULL
+for(i in 1:length(days)){
+	index = ind[i]
+	subgraph = as.data.frame(graph[,c((index-2):index)])
+	sub = subset(subgraph,subgraph$b == 1)
+	onesub = rbind(onesub,sub)
+}
+
+daysub1 = NULL
+minsub5 = NULL
+maxsub5 = NULL
+for(i in 1:length(days)){
+	daysub = subset(onesub, day == days[i])
+	minsub5 = rbind(minsub5,c(days[i],min(min(daysub$p3d),0.99)))
+	maxsub5 = rbind(maxsub5,c(days[i],max(max(daysub$p3d),0.99)))
+}
+
+daysub2 = NULL
+minsub6 = NULL
+maxsub6 = NULL
+for(i in 1:length(days)){
+	daysub2 = subset(zerosub, day == days[i])
+	minsub6 = rbind(minsub6,c(days[i],min(min(daysub2$p3d),p3c)))
+	maxsub6 = rbind(maxsub6,c(days[i],max(max(daysub2$p3d),p3c)))
+}
+```
+
+```{r, cache=TRUE, include = FALSE}
+p0 = 0.4
+
+p1 = ORfun(p0,1.77)
+
+g0 = log(-log(1-p0)/7)
+g1 = log(-log(1-p1)/7) - g0
+
+plac_bin = c(p0,1-p0)
+exp_bin = c(p1,1-p1)
+
+days = seq(7,14,0.01)
+p3 = seq(0.01,0.99,0.001)
+p3c = 1 - sum(((plac_bin + exp_bin)/2)^3)
+res = NULL
+p3dmat = NULL
+for(i in 1:length(days)){
+	day = days[i]
+	pd = pexp(day,exp(g0))
+	pe = pexp(day,exp(g0+g1))
+	p3d = p3[p3>p3c]
+
+	pt1 = log(1.77) * sqrt(n^3*p3d/(12*(n+1)^2))
+	
+	t2 = log(log(1-pe)/log(1-pd)) * (2/n * (1/pd + 1/pe))^(-1/2)
+	pt2 = rep(t2,length(p3d))
+
+	x = length(pt1)
+	repv = rep(NA,length(p3)-x)	
+
+	p3dmat = cbind(p3dmat,c(p3d,repv))
+	res = cbind(res,c(pt1,repv),c(pt2,repv),b=c(ifelse(pt1>pt2,1,0),repv))
+}
+
+ind = seq(3,3*length(days),3)
+graph = NULL
+for(i in 1:length(days)){
+	day = days[i]
+	index = ind[i]
+	graph = cbind(graph,day=rep(day,length(p3)),p3d = p3dmat[,i],b=res[,index])
+}
+
+zerosub = NULL
+for(i in 1:length(days)){
+	index = ind[i]
+	subgraph = as.data.frame(graph[,c((index-2):index)])
+	sub = subset(subgraph,subgraph$b == 0)
+	zerosub = rbind(zerosub,sub)
+}
+
+onesub = NULL
+for(i in 1:length(days)){
+	index = ind[i]
+	subgraph = as.data.frame(graph[,c((index-2):index)])
+	sub = subset(subgraph,subgraph$b == 1)
+	onesub = rbind(onesub,sub)
+}
+
+daysub1 = NULL
+minsub7 = NULL
+maxsub7 = NULL
+for(i in 1:length(days)){
+	daysub = subset(onesub, day == days[i])
+	minsub7 = rbind(minsub7,c(days[i],min(min(daysub$p3d),0.99)))
+	maxsub7 = rbind(maxsub7,c(days[i],max(max(daysub$p3d),0.99)))
+}
+
+daysub2 = NULL
+minsub8 = NULL
+maxsub8 = NULL
+for(i in 1:length(days)){
+	daysub2 = subset(zerosub, day == days[i])
+	minsub8 = rbind(minsub8,c(days[i],min(min(daysub2$p3d),p3c)))
+	maxsub8 = rbind(maxsub8,c(days[i],max(max(daysub2$p3d),p3c)))
+}
+```
+
+```{r, cache=TRUE, include = FALSE}
+p0 = 0.5
+
+p1 = ORfun(p0,1.77)
+
+g0 = log(-log(1-p0)/7)
+g1 = log(-log(1-p1)/7) - g0
+
+plac_bin = c(p0,1-p0)
+exp_bin = c(p1,1-p1)
+
+days = seq(7,14,0.01)
+p3 = seq(0.01,0.99,0.001)
+p3c = 1 - sum(((plac_bin + exp_bin)/2)^3)
+res = NULL
+p3dmat = NULL
+for(i in 1:length(days)){
+	day = days[i]
+	pd = pexp(day,exp(g0))
+	pe = pexp(day,exp(g0+g1))
+	p3d = p3[p3>p3c]
+
+	pt1 = log(1.77) * sqrt(n^3*p3d/(12*(n+1)^2))
+	
+	t2 = log(log(1-pe)/log(1-pd)) * (2/n * (1/pd + 1/pe))^(-1/2)
+	pt2 = rep(t2,length(p3d))
+
+	x = length(pt1)
+	repv = rep(NA,length(p3)-x)	
+
+	p3dmat = cbind(p3dmat,c(p3d,repv))
+	res = cbind(res,c(pt1,repv),c(pt2,repv),b=c(ifelse(pt1>pt2,1,0),repv))
+}
+
+ind = seq(3,3*length(days),3)
+graph = NULL
+for(i in 1:length(days)){
+	day = days[i]
+	index = ind[i]
+	graph = cbind(graph,day=rep(day,length(p3)),p3d = p3dmat[,i],b=res[,index])
+}
+
+zerosub = NULL
+for(i in 1:length(days)){
+	index = ind[i]
+	subgraph = as.data.frame(graph[,c((index-2):index)])
+	sub = subset(subgraph,subgraph$b == 0)
+	zerosub = rbind(zerosub,sub)
+}
+
+onesub = NULL
+for(i in 1:length(days)){
+	index = ind[i]
+	subgraph = as.data.frame(graph[,c((index-2):index)])
+	sub = subset(subgraph,subgraph$b == 1)
+	onesub = rbind(onesub,sub)
+}
+
+daysub1 = NULL
+minsub9 = NULL
+maxsub9 = NULL
+for(i in 1:length(days)){
+	daysub = subset(onesub, day == days[i])
+	minsub9 = rbind(minsub9,c(days[i],min(min(daysub$p3d),0.99)))
+	maxsub9 = rbind(maxsub9,c(days[i],max(max(daysub$p3d),0.99)))
+}
+
+daysub2 = NULL
+minsub10 = NULL
+maxsub10 = NULL
+for(i in 1:length(days)){
+	daysub2 = subset(zerosub, day == days[i])
+	minsub10 = rbind(minsub10,c(days[i],min(min(daysub2$p3d),p3c)))
+	maxsub10 = rbind(maxsub10,c(days[i],max(max(daysub2$p3d),p3c)))
+}
+```
+
+```{r, cache=TRUE, include = FALSE}
+## Ordinal endpoint distributions in both the placebo and IVIG groups on day 7
+plac_prob = c(0.009852217,0.049261084,0.162561576,0.145320197,0.362068966,0.270935961)
+exp_prob = c(0.005590184,0.028688675,0.104327684,0.108127134,0.356486213,0.396780110)
+
+## p0 and p1 are the discharge probabilities on day 7 for placebo and treatment, respectively.
+p0 = sum(plac_prob[5:6])
+
+p1 = sum(exp_prob[5:6])
+
+g0 = log(-log(1-p0)/7)
+g1 = log(-log(1-p1)/7) - g0
+
+plac_bin = c(p0,1-p0)
+exp_bin = c(p1,1-p1)
+
+days = seq(7,14,0.01)
+p3 = seq(0.01,0.99,0.001)
+p3c = 1 - sum(((plac_bin + exp_bin)/2)^3)
+res = NULL
+p3dmat = NULL
+for(i in 1:length(days)){
+	day = days[i]
+	pd = pexp(day,exp(g0))
+	pe = pexp(day,exp(g0+g1))
+	p3d = p3[p3>p3c]
+
+	pt1 = log(1.77) * sqrt(n^3*p3d/(12*(n+1)^2))
+	
+	t2 = log(log(1-pe)/log(1-pd)) * (2/n * (1/pd + 1/pe))^(-1/2)
+	pt2 = rep(t2,length(p3d))
+
+	x = length(pt1)
+	repv = rep(NA,length(p3)-x)	
+
+	p3dmat = cbind(p3dmat,c(p3d,repv))
+	res = cbind(res,c(pt1,repv),c(pt2,repv),b=c(ifelse(pt1>pt2,1,0),repv))
+}
+
+ind = seq(3,3*length(days),3)
+graph = NULL
+for(i in 1:length(days)){
+	day = days[i]
+	index = ind[i]
+	graph = cbind(graph,day=rep(day,length(p3)),p3d = p3dmat[,i],b=res[,index])
+}
+
+zerosub = NULL
+for(i in 1:length(days)){
+	index = ind[i]
+	subgraph = as.data.frame(graph[,c((index-2):index)])
+	sub = subset(subgraph,subgraph$b == 0)
+	zerosub = rbind(zerosub,sub)
+}
+
+onesub = NULL
+for(i in 1:length(days)){
+	index = ind[i]
+	subgraph = as.data.frame(graph[,c((index-2):index)])
+	sub = subset(subgraph,subgraph$b == 1)
+	onesub = rbind(onesub,sub)
+}
+
+daysub = NULL
+minsub11 = NULL
+maxsub11 = NULL
+for(i in 1:length(days)){
+	daysub = subset(onesub, day == days[i])
+	minsub11 = rbind(minsub11,c(days[i],min(daysub$p3d)))
+	maxsub11 = rbind(maxsub11,c(days[i],max(daysub$p3d)))
+}
+
+daysub2 = NULL
+minsub12 = NULL
+maxsub12 = NULL
+for(i in 1:length(days)){
+	daysub2 = subset(zerosub, day == days[i])
+	minsub12 = rbind(minsub12,c(days[i],min(daysub2$p3d)))
+	maxsub12 = rbind(maxsub12,c(days[i],max(daysub2$p3d)))
+}
+```
+
+```{r, cache=TRUE, include = FALSE}
+p0 = 0.7
+
+p1 = ORfun(p0,1.77)
+
+g0 = log(-log(1-p0)/7)
+g1 = log(-log(1-p1)/7) - g0
+
+plac_bin = c(p0,1-p0)
+exp_bin = c(p1,1-p1)
+
+days = seq(7,14,0.01)
+p3 = seq(0.01,0.99,0.001)
+p3c = 1 - sum(((plac_bin + exp_bin)/2)^3)
+res = NULL
+p3dmat = NULL
+for(i in 1:length(days)){
+	day = days[i]
+	pd = pexp(day,exp(g0))
+	pe = pexp(day,exp(g0+g1))
+	p3d = p3[p3>p3c]
+
+	pt1 = log(1.77) * sqrt(n^3*p3d/(12*(n+1)^2))
+	
+	t2 = log(log(1-pe)/log(1-pd)) * (2/n * (1/pd + 1/pe))^(-1/2)
+	pt2 = rep(t2,length(p3d))
+
+	x = length(pt1)
+	repv = rep(NA,length(p3)-x)	
+
+	p3dmat = cbind(p3dmat,c(p3d,repv))
+	res = cbind(res,c(pt1,repv),c(pt2,repv),b=c(ifelse(pt1>pt2,1,0),repv))
+}
+
+ind = seq(3,3*length(days),3)
+graph = NULL
+for(i in 1:length(days)){
+	day = days[i]
+	index = ind[i]
+	graph = cbind(graph,day=rep(day,length(p3)),p3d = p3dmat[,i],b=res[,index])
+}
+
+zerosub = NULL
+for(i in 1:length(days)){
+	index = ind[i]
+	subgraph = as.data.frame(graph[,c((index-2):index)])
+	sub = subset(subgraph,subgraph$b == 0)
+	zerosub = rbind(zerosub,sub)
+}
+
+onesub = NULL
+for(i in 1:length(days)){
+	index = ind[i]
+	subgraph = as.data.frame(graph[,c((index-2):index)])
+	sub = subset(subgraph,subgraph$b == 1)
+	onesub = rbind(onesub,sub)
+}
+
+daysub1 = NULL
+minsub13 = NULL
+maxsub13 = NULL
+for(i in 1:length(days)){
+	daysub = subset(onesub, day == days[i])
+	minsub13 = rbind(minsub13,c(days[i],min(min(daysub$p3d),0.99)))
+	maxsub13 = rbind(maxsub13,c(days[i],max(max(daysub$p3d),0.99)))
+}
+
+daysub2 = NULL
+minsub14 = NULL
+maxsub14 = NULL
+for(i in 1:length(days)){
+	daysub2 = subset(zerosub, day == days[i])
+	minsub14 = rbind(minsub14,c(days[i],min(min(daysub2$p3d),p3c)))
+	maxsub14 = rbind(maxsub14,c(days[i],max(max(daysub2$p3d),p3c)))
+}
+```
+
+```{r, cache=TRUE,include = FALSE}
+p0 = 0.8
+
+p1 = ORfun(p0,1.77)
+
+g0 = log(-log(1-p0)/7)
+g1 = log(-log(1-p1)/7) - g0
+
+plac_bin = c(p0,1-p0)
+exp_bin = c(p1,1-p1)
+
+days = seq(7,14,0.01)
+p3 = seq(0.01,0.99,0.001)
+p3c = 1 - sum(((plac_bin + exp_bin)/2)^3)
+res = NULL
+p3dmat = NULL
+for(i in 1:length(days)){
+	day = days[i]
+	pd = pexp(day,exp(g0))
+	pe = pexp(day,exp(g0+g1))
+	p3d = p3[p3>p3c]
+
+	pt1 = log(1.77) * sqrt(n^3*p3d/(12*(n+1)^2))
+	
+	t2 = log(log(1-pe)/log(1-pd)) * (2/n * (1/pd + 1/pe))^(-1/2)
+	pt2 = rep(t2,length(p3d))
+
+	x = length(pt1)
+	repv = rep(NA,length(p3)-x)	
+
+	p3dmat = cbind(p3dmat,c(p3d,repv))
+	res = cbind(res,c(pt1,repv),c(pt2,repv),b=c(ifelse(pt1>pt2,1,0),repv))
+}
+
+ind = seq(3,3*length(days),3)
+graph = NULL
+for(i in 1:length(days)){
+	day = days[i]
+	index = ind[i]
+	graph = cbind(graph,day=rep(day,length(p3)),p3d = p3dmat[,i],b=res[,index])
+}
+
+zerosub = NULL
+for(i in 1:length(days)){
+	index = ind[i]
+	subgraph = as.data.frame(graph[,c((index-2):index)])
+	sub = subset(subgraph,subgraph$b == 0)
+	zerosub = rbind(zerosub,sub)
+}
+
+onesub = NULL
+for(i in 1:length(days)){
+	index = ind[i]
+	subgraph = as.data.frame(graph[,c((index-2):index)])
+	sub = subset(subgraph,subgraph$b == 1)
+	onesub = rbind(onesub,sub)
+}
+
+daysub1 = NULL
+minsub15 = NULL
+maxsub15 = NULL
+for(i in 1:length(days)){
+	daysub = subset(onesub, day == days[i])
+	minsub15 = rbind(minsub15,c(days[i],min(min(daysub$p3d),0.99)))
+	maxsub15 = rbind(maxsub15,c(days[i],max(max(daysub$p3d),0.99)))
+}
+
+daysub2 = NULL
+minsub16 = NULL
+maxsub16 = NULL
+for(i in 1:length(days)){
+	daysub2 = subset(zerosub, day == days[i])
+	minsub16 = rbind(minsub16,c(days[i],min(min(daysub2$p3d),p3c)))
+	maxsub16 = rbind(maxsub16,c(days[i],max(max(daysub2$p3d),p3c)))
+}
+```
+
+```{r, cache=TRUE,include = FALSE}
+p0 = 0.9
+
+p1 = ORfun(p0,1.77)
+
+g0 = log(-log(1-p0)/7)
+g1 = log(-log(1-p1)/7) - g0
+
+plac_bin = c(p0,1-p0)
+exp_bin = c(p1,1-p1)
+
+days = seq(7,14,0.01)
+p3 = seq(0.01,0.99,0.001)
+p3c = 1 - sum(((plac_bin + exp_bin)/2)^3)
+res = NULL
+p3dmat = NULL
+for(i in 1:length(days)){
+	day = days[i]
+	pd = pexp(day,exp(g0))
+	pe = pexp(day,exp(g0+g1))
+	p3d = p3[p3>p3c]
+
+	pt1 = log(1.77) * sqrt(n^3*p3d/(12*(n+1)^2))
+	
+	t2 = log(log(1-pe)/log(1-pd)) * (2/n * (1/pd + 1/pe))^(-1/2)
+	pt2 = rep(t2,length(p3d))
+
+	x = length(pt1)
+	repv = rep(NA,length(p3)-x)	
+
+	p3dmat = cbind(p3dmat,c(p3d,repv))
+	res = cbind(res,c(pt1,repv),c(pt2,repv),b=c(ifelse(pt1>pt2,1,0),repv))
+}
+
+ind = seq(3,3*length(days),3)
+graph = NULL
+for(i in 1:length(days)){
+	day = days[i]
+	index = ind[i]
+	graph = cbind(graph,day=rep(day,length(p3)),p3d = p3dmat[,i],b=res[,index])
+}
+
+zerosub = NULL
+for(i in 1:length(days)){
+	index = ind[i]
+	subgraph = as.data.frame(graph[,c((index-2):index)])
+	sub = subset(subgraph,subgraph$b == 0)
+	zerosub = rbind(zerosub,sub)
+}
+
+onesub = NULL
+for(i in 1:length(days)){
+	index = ind[i]
+	subgraph = as.data.frame(graph[,c((index-2):index)])
+	sub = subset(subgraph,subgraph$b == 1)
+	onesub = rbind(onesub,sub)
+}
+
+daysub1 = NULL
+minsub17 = NULL
+maxsub17 = NULL
+for(i in 1:length(days)){
+	daysub = subset(onesub, day == days[i])
+	minsub17 = rbind(minsub17,c(days[i],min(min(daysub$p3d),0.99)))
+	maxsub17 = rbind(maxsub17,c(days[i],max(max(daysub$p3d),0.99)))
+}
+
+daysub2 = NULL
+minsub18 = NULL
+maxsub18 = NULL
+for(i in 1:length(days)){
+	daysub2 = subset(zerosub, day == days[i])
+	minsub18 = rbind(minsub18,c(days[i],min(min(daysub2$p3d),p3c)))
+	maxsub18 = rbind(maxsub18,c(days[i],max(max(daysub2$p3d),p3c)))
+}
+```
+
+```{r, echo = FALSE}
+par(mfrow = c(3, 3))
+par(mar=c(2,2,2,2))
+term = expression(1 - sum(bar(p)[i]^3,i==1,k))
+term2 = expression(paste("Follow-up Period ", (t)))
+term3 = expression(paste(p['07'], " = 0.10"))
+term4 = expression(paste(p['07'], " = 0.20"))
+term5 = expression(paste(p['07'], " = 0.30"))
+term6 = expression(paste(p['07'], " = 0.40"))
+term7 = expression(paste(p['07'], " = 0.50"))
+term8 = expression(paste(p['07'], " = 0.64 for FLU-IVIG"))
+term9 = expression(paste(p['07'], " = 0.70"))
+term10 = expression(paste(p['07'], " = 0.80"))
+term11 = expression(paste(p['07'], " = 0.90"))
+
+plot(x=1,y=1,xlab = "", ylab = "", xlim = c(7,14),
+	ylim = c(0.3441092,1),type="n",xaxt = "n", yaxt = "n",main = term3, cex.main = 0.9)
+polygon(c(minsub1[,1],rev(maxsub1[,1])),c(minsub1[,2],maxsub1[,2]),
+	col='blue',border='green')
+polygon(c(rev(maxsub2[,1]),minsub2[,1]),c(minsub2[,2],maxsub2[,2]),
+	col='red',border='yellow')
+axis(1, at=c(7,14), labels=c("",""), lwd.ticks=0)
+axis(1, at=seq(7,14,by=1), lwd=0, lwd.ticks=1)
+axis(2, at=c(0,1), labels=c("",""), lwd.ticks=0)
+axis(2, at=seq(0,1,0.1), lwd=0, lwd.ticks=1)
+
+plot(x=1,y=1,xlab = "", ylab = "", xlim = c(7,14),
+	ylim = c(0.5675351,1),type="n",xaxt = "n", yaxt = "n",main = term4, cex.main = 0.9)
+polygon(c(minsub3[,1],rev(maxsub3[,1])),c(minsub3[,2],maxsub3[,2]),
+	col='blue',border='green')
+polygon(c(rev(maxsub4[,1]),minsub4[,1]),c(minsub4[,2],maxsub4[,2]),
+	col='red',border='yellow')
+axis(1, at=c(7,14), labels=c("",""), lwd.ticks=0)
+axis(1, at=seq(7,14,by=1), lwd=0, lwd.ticks=1)
+axis(2, at=c(0,1), labels=c("",""), lwd.ticks=0)
+axis(2, at=seq(0,1,0.1), lwd=0, lwd.ticks=1)
+
+plot(x=1,y=1,xlab = "", ylab = "", xlim = c(7,14),
+	ylim = c(0.6958731,1),type="n",xaxt = "n", yaxt = "n",main = term5, cex.main = 0.9)
+polygon(c(minsub5[,1],rev(maxsub5[,1])),c(minsub5[,2],maxsub5[,2]),
+	col='blue',border='green')
+polygon(c(rev(maxsub6[,1]),minsub6[,1]),c(minsub6[,2],maxsub6[,2]),
+	col='red',border='yellow')
+axis(1, at=c(7,14), labels=c("",""), lwd.ticks=0)
+axis(1, at=seq(7,14,by=1), lwd=0, lwd.ticks=1)
+axis(2, at=c(0,1), labels=c("",""), lwd.ticks=0)
+axis(2, at=seq(0,1,0.1), lwd=0, lwd.ticks=1)
+
+plot(x=1,y=1,xlab = "", ylab = "", xlim = c(7,14),
+	ylim = c(0.7474144,1),type="n",xaxt = "n", yaxt = "n",main = term6, cex.main = 0.9)
+polygon(c(minsub7[,1],rev(maxsub7[,1])),c(minsub7[,2],maxsub7[,2]),
+	col='blue',border='green')
+polygon(c(rev(maxsub8[,1]),minsub8[,1]),c(minsub8[,2],maxsub8[,2]),
+	col='red',border='yellow')
+axis(1, at=c(7,14), labels=c("",""), lwd.ticks=0)
+axis(1, at=seq(7,14,by=1), lwd=0, lwd.ticks=1)
+axis(2, at=c(0,1), labels=c("",""), lwd.ticks=0)
+axis(2, at=seq(0,1,0.1), lwd=0, lwd.ticks=1)
+
+plot(x=1,y=1,xlab = "", ylab = "", xlim = c(7,14),
+	ylim = c(0.7355115,1),type="n",xaxt = "n", yaxt = "n",main = term7, cex.main = 0.9)
+polygon(c(minsub9[,1],rev(maxsub9[,1])),c(minsub9[,2],maxsub9[,2]),
+	col='blue',border='green')
+polygon(c(rev(maxsub10[,1]),minsub10[,1]),c(minsub10[,2],maxsub10[,2]),
+	col='red',border='yellow')
+axis(1, at=c(7,14), labels=c("",""), lwd.ticks=0)
+axis(1, at=seq(7,14,by=1), lwd=0, lwd.ticks=1)
+axis(2, at=c(0,1), labels=c("",""), lwd.ticks=0)
+axis(2, at=seq(0,1,0.1), lwd=0, lwd.ticks=1)
+
+plot(x=1,y=1,xlab = "", ylab = "", xlim = c(7,14),
+	ylim = c(0.6380959,1),type="n",xaxt = "n", yaxt = "n",main = term8, cex.main = 0.9)
+polygon(c(minsub11[,1],rev(maxsub11[,1])),c(minsub11[,2],maxsub11[,2]),
+	col='blue',border='green')
+polygon(c(rev(maxsub12[,1]),minsub12[,1]),c(minsub12[,2],maxsub12[,2]),
+	col='red',border='yellow')
+points(7,1 - sum(((plac_prob + exp_prob)/2)^3),pch = 16, col = 'purple')
+axis(1, at=c(7,14), labels=c("",""), lwd.ticks=0)
+axis(1, at=seq(7,14,by=1), lwd=0, lwd.ticks=1)
+axis(2, at=c(0,1), labels=c("",""), lwd.ticks=0)
+axis(2, at=seq(0,1,0.1), lwd=0, lwd.ticks=1)
+
+plot(x=1,y=1,xlab = "", ylab = "", xlim = c(7,14),
+	ylim = c(0.5586796,1),type="n",xaxt = "n", yaxt = "n",main = term9, cex.main = 0.9)
+polygon(c(minsub13[,1],rev(maxsub13[,1])),c(minsub13[,2],maxsub13[,2]),
+	col='blue',border='green')
+polygon(c(rev(maxsub14[,1]),minsub14[,1]),c(minsub14[,2],maxsub14[,2]),
+	col='red',border='yellow')
+axis(1, at=c(7,14), labels=c("",""), lwd.ticks=0)
+axis(1, at=seq(7,14,by=1), lwd=0, lwd.ticks=1)
+axis(2, at=c(0,1), labels=c("",""), lwd.ticks=0)
+axis(2, at=seq(0,1,0.1), lwd=0, lwd.ticks=1)
+
+plot(x=1,y=1,xlab = "", ylab = "", xlim = c(7,14),
+	ylim = c(0.407027,1),type="n",xaxt = "n", yaxt = "n",main = term10, cex.main = 0.9)
+polygon(c(minsub15[,1],rev(maxsub15[,1])),c(minsub15[,2],maxsub15[,2]),
+	col='blue',border='green')
+polygon(c(rev(maxsub16[,1]),minsub16[,1]),c(minsub16[,2],maxsub16[,2]),
+	col='red',border='yellow')
+axis(1, at=c(7,14), labels=c("",""), lwd.ticks=0)
+axis(1, at=seq(7,14,by=1), lwd=0, lwd.ticks=1)
+axis(2, at=c(0,1), labels=c("",""), lwd.ticks=0)
+axis(2, at=seq(0,1,0.1), lwd=0, lwd.ticks=1)
+
+plot(x=1,y=1,xlab = "", ylab = "", xlim = c(7,14),
+	ylim = c(0.2196234,1),type="n",xaxt = "n", yaxt = "n",main = term11, cex.main = 0.9)
+polygon(c(minsub17[,1],rev(maxsub17[,1])),c(minsub17[,2],maxsub17[,2]),
+	col='blue',border='green')
+polygon(c(rev(maxsub18[,1]),minsub18[,1]),c(minsub18[,2],maxsub18[,2]),
+	col='red',border='yellow')
+axis(1, at=c(7,14), labels=c("",""), lwd.ticks=0)
+axis(1, at=seq(7,14,by=1), lwd=0, lwd.ticks=1)
+axis(2, at=c(0,1), labels=c("",""), lwd.ticks=0)
+axis(2, at=seq(0,1,0.1), lwd=0, lwd.ticks=1)
+```
