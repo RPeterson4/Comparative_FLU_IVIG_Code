@@ -1,0 +1,128 @@
+```{r, cache = TRUE, include = FALSE}
+ORfun = function(p0,OR){
+	p0 = 1 - p0
+	pexp = p0/(p0 + (1 - p0)*OR)
+	return(1-pexp)
+}
+
+n = 320
+qc = qnorm(0.975)
+
+## Ordinal endpoint distributions in both the placebo and IVIG groups on day 7
+plac_prob = c(0.009852217,0.049261084,0.162561576,0.145320197,0.362068966,0.270935961)
+exp_prob = c(0.005590184,0.028688675,0.104327684,0.108127134,0.356486213,0.396780110)
+
+## p0 and p1 are the discharge probabilities on day 7 for placebo and treatment, respectively.
+p0 = sum(plac_prob[5:6])
+
+p1 = sum(exp_prob[5:6])
+
+g0 = log(-log(1-p0)/7)
+g1 = log(-log(1-p1)/7) - g0
+
+plac_bin = c(p0,1-p0)
+exp_bin = c(p1,1-p1)
+
+days = seq(7,14,0.01)
+p3 = seq(0.01,0.99,0.001)
+p3c = 1 - sum(((plac_bin + exp_bin)/2)^3)
+res = NULL
+p3dmat = NULL
+for(i in 1:length(days)){
+	day = days[i]
+	pd = pexp(day,exp(g0))
+	pe = pexp(day,exp(g0+g1))
+	p3d = p3[p3>p3c]
+
+	pt1 = log(1.77) * sqrt(n^3*p3d/(12*(n+1)^2))
+	
+	t2 = log(log(1-pe)/log(1-pd)) * (2/n * (1/pd + 1/pe))^(-1/2)
+	pt2 = rep(t2,length(p3d))
+
+	x = length(pt1)
+	repv = rep(NA,length(p3)-x)	
+
+	p3dmat = cbind(p3dmat,c(p3d,repv))
+	res = cbind(res,c(pt1,repv),c(pt2,repv),b=c(ifelse(pt1>pt2,1,0),repv))
+}
+
+ind = seq(3,3*length(days),3)
+graph = NULL
+for(i in 1:length(days)){
+	day = days[i]
+	index = ind[i]
+	graph = cbind(graph,day=rep(day,length(p3)),p3d = p3dmat[,i],b=res[,index])
+}
+
+zerosub = NULL
+for(i in 1:length(days)){
+	index = ind[i]
+	subgraph = as.data.frame(graph[,c((index-2):index)])
+	sub = subset(subgraph,subgraph$b == 0)
+	zerosub = rbind(zerosub,sub)
+}
+
+onesub = NULL
+for(i in 1:length(days)){
+	index = ind[i]
+	subgraph = as.data.frame(graph[,c((index-2):index)])
+	sub = subset(subgraph,subgraph$b == 1)
+	onesub = rbind(onesub,sub)
+}
+
+daysub = NULL
+minsub11 = NULL
+maxsub11 = NULL
+for(i in 1:length(days)){
+	daysub = subset(onesub, day == days[i])
+	minsub11 = rbind(minsub11,c(days[i],min(daysub$p3d)))
+	maxsub11 = rbind(maxsub11,c(days[i],max(daysub$p3d)))
+}
+
+daysub2 = NULL
+minsub12 = NULL
+maxsub12 = NULL
+for(i in 1:length(days)){
+	daysub2 = subset(zerosub, day == days[i])
+	minsub12 = rbind(minsub12,c(days[i],min(daysub2$p3d)))
+	maxsub12 = rbind(maxsub12,c(days[i],max(daysub2$p3d)))
+}
+```
+
+```{r,include = FALSE}
+cfun = function(day,p3d){
+  pd = pexp(day,exp(g0))
+	pe = pexp(day,exp(g0+g1))
+
+	t1 = log(1.77) * sqrt(n^3*p3d/(12*(n+1)^2))
+	p1 = pnorm(-1.96+t1)
+	
+	t2 = log(log(1-pe)/log(1-pd)) * (2/n * (1/pd + 1/pe))^(-1/2)
+	p2 = pnorm(-1.96+t2)
+	return(100*abs(p1-p2))
+}
+```
+
+```{r,echo = FALSE}
+term8 = expression(paste(p['07'], " = 0.63 for FLU-IVIG"))
+term12 = expression(1-sum(bar(q)[i]^3, i==1, k))
+par(oma = c(0,2,0,0))
+
+plot(x=1,y=1, xlim = c(7,14),
+	ylim = c(0.6380959,1),type="n",xaxt = "n", yaxt = "n",main = term8, cex.main = 1,
+	ylab = "",xlab="Follow-up Period (t)",cex.lab = 1)
+polygon(c(minsub11[,1],rev(maxsub11[,1])),c(minsub11[,2],maxsub11[,2]),
+	col='lightblue',border='lightgreen')
+polygon(c(rev(maxsub12[,1]),minsub12[,1]),c(minsub12[,2],maxsub12[,2]),
+	col='palevioletred',border='yellow')
+points(7,1 - sum(((plac_prob + exp_prob)/2)^3),pch = 16, col = 'purple')
+axis(1, at=c(7,14), labels=c("",""), lwd.ticks=0)
+axis(1, at=seq(7,14,by=1), lwd=0, lwd.ticks=1)
+axis(2, at=c(0,1), labels=c("",""), lwd.ticks=0)
+axis(2, at=seq(0,1,0.1), lwd=0, lwd.ticks=1)
+mtext(term12, side = 2, outer = TRUE, line = -1, cex.lab = 1)
+p3d = p3[p3>p3c]
+z = cfun(expand.grid(days,p3d)$Var1,expand.grid(days,p3d)$Var2)
+z2 = matrix(z,length(days),length(p3d))
+contour(x = days, y = p3d, z = z2, add=TRUE)
+```
